@@ -11,7 +11,7 @@
 - [코알라 유니브 페이스북](https://www.facebook.com/coalastudy/)
 - [Meeta 홈페이지](https://meeta.io/)
 
-*관련기사
+*관련기사*
 - ['코딩좀알려주라', '코알라 유니브 2기' 모집](http://www.greenpostkorea.co.kr/news/articleView.html?idxno=108004?obj=Tzo4OiJzdGRDbGFzcyI6Mjp7czo3OiJyZWZlcmVyIjtOO3M6NzoiZm9yd2FyZCI7czoxMzoid2ViIHRvIG1vYmlsZSI7fQ%3D%3D)
 - ['대학생을 데이터 사이언티스트로” 코알라 유니브 2기 모집'](https://search.naver.com/p/crd/rd?m=1&px=620&py=403&sx=620&sy=303&p=UBKD2wp0YidssidIXpNssssssrC-205593&q=%EC%BD%94%EC%95%8C%EB%9D%BC%EC%9C%A0%EB%8B%88%EB%B8%8C&ie=utf8&rev=1&ssc=tab.news.all&f=news&w=news&s=zZ5SZsAgLzO%2B0VjcWlLw9imd&time=1580410338699&bt=15&a=nws*f.tit&r=2&i=8817ca87_000000000000000000007543&g=5506.0000007543&u=https%3A%2F%2Fwww.venturesquare.net%2F788771)
 
