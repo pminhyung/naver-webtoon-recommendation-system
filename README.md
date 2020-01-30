@@ -1,6 +1,6 @@
 # <br/> 웹툰 개인화 추천시스템(Naver Webtoon Recommendation System)
 ## '코알라 유니브 2기 해커톤 진행 (2020. 01. 11.)
-### 중앙대 COCAUIN TEAM : "코알라유니브(COalauniv 중앙대(CAU)인(사람인)"
+### 중앙대 COCAUIN TEAM : "코알라유니브(COalauniv) 중앙대(CAU)인"
 
   
 ## 1. 코알라 유니브
