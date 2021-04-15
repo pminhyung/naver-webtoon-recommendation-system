@@ -31,10 +31,60 @@
     
 - 잠재요소 기반 협업필터링(Latent factor based Collaborative Filtering)
 - 아이템 기반 협업필터링(Item based Collaborative Filtering)
-- 'Surprise' Module을 사용한 추천 시스템 모델('Surprise' based recommendation system)  
-  
-**[중요 파일]**  
+- 'Surprise' Module을 사용한 추천 시스템 모델('Surprise' based recommendation system)
 
+### Usage
+1. scrap webtoon information (make a survey form) - run "scraping_webtoon_info.py"
+
+2. get dataset from surveying (csv file)
+
+3. use collaborative filtering (Latent factor or Item based): run "recommend.py"
+
+```
+python recommend.py config.json
+```
+
+2. use Surprise package : run recommend_surprise.py
+```
+python recommend_surprise.py config.json
+```
+
+
+```
+usage: recommend.py [-p csv_path] [-c config_file] [-k K] [-s step] [-lr learning_rate] [-rl r_lambda] 
+                    [-m model]
+                    [-n names] [-tn top_n]
+                    [-s save] [-sp save_path]
+
+positional arguments:
+  -p  csv_path                           Survey data file path
+  -k  K                                  Train_K:int
+  -s  step                               Train_step:int
+  -lr learning rate                      Train_learning_rate
+  -rl r_lambda                           Train_r_lambda:float
+  -m model                               Model to use (Item based or Latent factor based)
+  -n names                               Usernames to recommend
+  -tn top_n                              Numbers of recommendation results(append):int
+  -s save                                save result:bool
+  -sp save_path                          path to save result:str
+
+optional arguments:
+  -c config_file        use saved config file (Quick start), if True, not need other arguments
+```
+---
+
+```
+usage: recommend_surprise.py [-c config_file] [-n names] 
+                    
+positional arguments:
+  -c config_file         use saved config file (Quick start)
+  -n names                uesrnames_to_recommend:str
+```
+
+**[Update]**
+- 2021.04. Refactoring codes from two notebook files ("notobook" directory)
+
+Notebook
 - `00. 2기_중앙대COCAUIN(코카인)_01.웹툰추천시스템` : 추천시스템을 구현한 코드 파일입니다.  
 - `01. 2기_중앙대COCAUIN(코카인)_02_Web Scraping for Survey_Form (NAVER Webtoon Service)` : 설문조사폼을 만들 때 활용한 크롤링 코드입니다. 웹툰 작품들의 제목, 포스터, 작가를 수집하였습니다.
 
