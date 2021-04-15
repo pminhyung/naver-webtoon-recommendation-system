@@ -4,14 +4,45 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics.pairwise import cosine_similarity
 
+from utils import read_json
+
 # Latent factor based Collaborative Filtering
 class LatentCF:
-    def __init__(self):
+    def __init__(self, config):
+        """
+        model of Latent factor based collaborative filtering
+
+        :param survey_df: input_data(dataframe)
+        """
         self.P, self.Q = None, None
         self.pred_matrix = None
-        self.unseen_list = None
         self.rating_matrix = None
-        self.user2id, self.id2user = None, None
+        self.user2id = None
+
+    def get_rating_matrix(self, survey_df):
+        """
+
+        :param df: survey data(dataframe)
+        :return: rating_matrix
+        """
+        data = survey_df
+        data['userid'] = range(len(data))
+        data.set_index('userid', inplace=True)
+
+        self.user2id = {name: id for name, id in zip(data['이름'], data['userid'])}
+
+        drop_cols = ['타임스탬프',
+                     '귀하의 성별은?',
+                     '현재까지 감상한 웹툰 작품을 점수(1~5점)를 매겨주세요😃 보지 않으신 작품은 "없음"에 표시해주세요. ',
+                     '이름',
+                     '연락처']
+        data.drop(drop_cols, axis=1, inplace=True)
+        data.replace('없음', np.nan, inplace=True)
+        data = data.astype('float64')
+
+        self.rating_matrix = data
+        print('rating matrix ready!')
+        return self.rating_matrix
 
     def get_rmse(self, R, P, Q, non_zeros):  # R = rating_matrix
         full_pred_matrix = np.dot(P, Q.T)
@@ -25,17 +56,22 @@ class LatentCF:
 
         return rmse
 
-    def train(self, R, K, steps=200, learning_rate=0.01, r_lambda=0.01):
+    def train(self, rating_matrix, K=30, steps=200, learning_rate=0.01, r_lambda=0.01):
         """
-        matrix_factorization
+        perform matrix_factorization
+
+        :param R: rating matrix
         :param K:
-        :param steps:
-        :param learning_rate:
+        :param steps: train step
+        :param learning_rate: learning_rate
         :param r_lambda:
         :return:
         """
+
+        R = rating_matrix
         num_users, num_items = R.shape
         np.random.seed(1)
+
         P = np.random.normal(scale=1. / K, size=(num_users, K))
         Q = np.random.normal(scale=1. / K, size=(num_items, K))
 
@@ -54,57 +90,59 @@ class LatentCF:
         self.P, self.Q = P, Q
         self.pred_matrix = np.dot(self.P, self.Q.T)
 
-
-
-    def get_unseen_webtoons(self, userid):
-        user_rating = self.rating_matrix.loc[userid, :]
+    def get_unseen_webtoons(self, rating_matrix, userid):
+        user_rating = rating_matrix.loc[userid, :]
         already_seen = user_rating[user_rating > 0].index.tolist()
-        webtoons_list = self.rating_matrix.columns.tolist()
+        webtoons_list = rating_matrix.columns.tolist()
         unseen_list = [webtoon for webtoon in webtoons_list if webtoon not in already_seen]
-        print('평점 매긴 영화수:', len(already_seen), '추천대상 영화수:', len(unseen_list), \
+        print('평점 매긴 영화수:', len(already_seen), '추천대상 영화수:', len(unseen_list),
               '전체 영화수:', len(webtoons_list))
 
-        self.unseen_list = unseen_list
+        return unseen_list
 
-
-    def recommend_webtoons(self, userid, top_n=5, save = False):
+    def recommend_webtoons(self, rating_matrix, username, top_n):
         """
         Recommend webtoons by userid
 
-        :param userid: userid in data
+        :param username: username to recommend (included in survey data)
         :param top_n: number of recommendations
         :param save: save to xlsx (bool)
         :return:
         """
-        pred_df = pd.DataFrame(data=self.pred_matrix, columns=self.rating_matrix.columns, index=self.rating_matrix.index)
-        recomm_webtoons = pred_df.loc[userid, self.unseen_list].sort_values(ascending=False)[:top_n]
-        recomm_webtoons_df = pd.DataFrame(data=recomm_webtoons.values, index=recomm_webtoons.index, columns=['pred_score'])
+        userid = self.user2idx[username]
+        unseen_list = self.get_unseen_webtoons(rating_matrix, userid)
+        pred_df = pd.DataFrame(
+                               data=self.pred_matrix,
+                               columns=rating_matrix.columns,
+                               index=rating_matrix.index
+                              )
+        recomm_webtoons = (pred_df.loc[userid, unseen_list]
+                                  .sort_values(ascending=False)[:top_n])
+        recomm_webtoons_df = pd.DataFrame(
+                                          data=recomm_webtoons.values,
+                                          index=recomm_webtoons.index,
+                                          columns=['pred_score']
+                                          )
 
-        print('\n', '%%%% {} %%%% 님의'.format(self.user2id[userid]), '\n')
-        print('## 추천 5개 웹툰 ## ', '\n', recomm_webtoons)
+        print('\n', '%%%% {} %%%% 님의'.format(username), '\n')
+        print('## 추천 {}개 웹툰 ## '.format(self.top_n), '\n', recomm_webtoons_df)
         print('=' * 70)
 
-        if save:
-            recomm_webtoons_df.to_xlsx('recommendation.xlsx', index=False)
-
-    def preprocess_data(self, df):
-        """
-
-        :param df: survey data(dataframe)
-        :return: rating_matrix
-        """
-        prep_df = df
-        self.user2id = {u:idx for idx, u in enumerate(list(df['이름']))}
-        self.id2user = {idx:u for idx, u in enumerate(list(df['이름']))}
-
-        self.rating_matrix = prep_df
+        return recomm_webtoons_df
 
 # Item based Collaborative Filtering
-
 class ItemCF(LatentCF):
     def __init__(self):
         super(ItemCF, self).__init__()
-        pass
+
+    def get_rating_matrix(self, survey_df):
+        """
+
+        :param survey_df: survey data(dataframe)
+        :return: rating_matrix
+        """
+        self.rating_matrix = super(ItemCF, self).get_rating_matrix(survey_df).fillna(0)
+        return self.rating_matrix
 
     def get_rmse_Item(self, pred, actual):
         # Ignore nonzero terms.
@@ -133,26 +171,61 @@ class ItemCF(LatentCF):
         return pred
 
     def get_ratings_pred_matrix(self, ratings_matrix, top_n):
-        ratings_pred_arr = self.predict_rating_topsim(ratings_matrix.values, self.get_item_sim_df(ratings_matrix).values, n=top_n)
-        return ratings_pred_arr
+        self.pred_matrix = self.predict_rating_topsim(ratings_matrix.values, self.get_item_sim_df(ratings_matrix).values, n=top_n)
 
-    def get_preferred_top_n(self, ratings_matrix, userId, top_n):
-        user_rating_id = ratings_matrix.loc[userId, :]
+    def get_preferred_top_n(self, ratings_matrix, userid, top_n):
+        user_rating_id = ratings_matrix.loc[userid, :]
         return user_rating_id[user_rating_id > 0].sort_values(ascending=False)[:top_n]
 
-    def show_result_Item(self, rating_matrix, userId):
+    def show_result_item(self, rating_matrix, username, top_n):
+        userid = self.user2id[username]
+        preferred_webtoons = self.get_preferred_top_n(rating_matrix, userid, top_n)
+        recommend_webtoons_df = self.recommend_webtoons(rating_matrix, userid)
 
-        ratings_pred_arr = self.get_ratings_pred_matrix(rating_matrix, 10)
-        preferred_webtoons = self.get_preferred_top_n(rating_matrix, 235, 5)
-        unseen_list = self.get_unseen_webtoons(rating_matrix, userId)
-        recomm_webtoons = self.recomm_webtoons_by_userid(survey, ratings_pred_arr, userId, unseen_list, top_n=5)
-
-        return preferred_webtoons, recomm_webtoons
-
-# 'Surprise' based recommendation system
-
-
-
+        print('\n', '%%%% {} %%%% 님의'.format(username), '\n')
+        print('## 선호 {}개 웹툰 ## '.format(self.top_n), '\n', preferred_webtoons, '\n')
+        print('## 추천 {}개 웹툰 ## '.format(self.top_n), '\n', recommend_webtoons_df)
+        print('=' * 70)
+        return preferred_webtoons, recommend_webtoons_df
 
 if __name__ == '__main__':
-    pass
+    # load data
+    config = read_json('config.json')
+    path = 'data/naver_webtoon.csv'
+    survey_df = pd.read_csv(path)
+
+    # use latent collaborative filtering for recommendation
+    latentcf = LatentCF(config)
+    rating_matrix = latentcf.get_rating_matrix(survey_df)
+    latentcf.train(rating_matrix, K=30, steps=200, learning_rate=0.01, r_lambda=0.01)
+    recomm_webtoons_df = latentcf.recommend_webtoons(rating_matrix, username='박민형')
+
+    # use latent collaborative filtering for recommendation
+    itemcf = ItemCF(config)
+    rating_matrix = itemcf.get_rating_matrix(survey_df)
+    preferred_webtoons, recomm_webtoons = itemcf.show_result_item(rating_matrix, username = '박민형')
+
+    """
+    
+    'example of LatentCF result'
+    
+    STEP_COUNT:  0 RMSE : 3.532614660716394
+    STEP_COUNT:  40 RMSE : 0.4428637719198905
+    STEP_COUNT:  80 RMSE : 0.3302075532662343
+    STEP_COUNT:  120 RMSE : 0.2968993703202772
+    STEP_COUNT:  160 RMSE : 0.28072334925892345
+    
+    %%%% 박민형 %%%% 님의 
+
+    ## 추천 5개 웹툰 ##  
+                             pred_score
+    네이버 수요일 웹툰 [고삼무쌍]         5.522287
+    네이버 완결 웹툰 [신과 함께]         5.394038
+    네이버 일요일 웹툰 [마루한-구현동화전]    5.093802
+    네이버 토요일 웹툰 [회춘]           5.069422
+    네이버 완결 웹툰 [여중생 A]         5.045176
+    
+    'recommendation result file saved, recommendation.xlsx'
+    
+    """
+
